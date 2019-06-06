@@ -170,7 +170,7 @@ def replicate(object_type_, strategy_type_, strategy_percent_list_):
 print("Main Simulate Program")
 initPayoffTable()
 # Define type 0->lita zhuyi, type 1->self-interested, type 2->breaker
-initObjectPopulation(3, 0.1, 0.8, 0.1)
+initObjectPopulation(3, 0.1, 0.1, 0.8)
 
 #define strategy population
 strategy_number_set = [2,2,2]
@@ -179,9 +179,7 @@ strategy_percent_set = [[0.5, 0.5],
                         [0.5, 0.5]]
                         # C , W1, W2
                         
-parameter_set = [[[0.3, 0.01, 0.1], [0.5, 0.0, 0.1]],
-                 [[0.5, 0.01, 0.5], [0.1, 0.0, 0.9]],
-                 [[0.0, 0.01, 1.0], [0.1, 0.0, 0.9]]]
+parameter_set =  [[[0.3, 0.1, 0.1], [0.5, 0.1, 0.1]], [[0.5, 0.1, 0.5], [0.1, 0.1, 0.9]], [[0.0, 0.1, 1.0], [0.1, 0.1, 0.9]]]
 
 for i in range(0, len(object_type_list)):
     strategy_percent_list.append(initStrategyPopulation(strategy_number_set[i], strategy_percent_set[i]))
@@ -192,7 +190,7 @@ print("Init object percent list: \n", object_percent_list)
 print("Init strategy percent list: \n", strategy_percent_list)
 print("Init parameter list: \n", parameter_list)
 print("-------------------------------")
-delta = 1.2
+delta = 0.5
 # list of list of list record fitness of each strategy in each iteration
 fitness_list = [[[] for j in range(0, len(strategy_percent_list[i]))] for i in range(0, len(object_type_list))]
 
@@ -206,14 +204,14 @@ cons = ({'type':'ineq', 'fun':lambda x: x[0]},
         {'type':'ineq', 'fun':lambda x: x[2]},
         {'type':'ineq', 'fun':lambda x: 1-x[2]},
        )
-iter_number=5000
+iter_number=2000
 for i in range(0, iter_number):
     # Append information to list for draw curve
     # look through Objec type 
     for j in range(0, len(object_type_list)):
         # look through stretagy type
         for k in range(0, len(strategy_type_list[j])):
-            fitness_list[j][k].append(fitness(j, k, strategy_percent_list)*delta)
+            #fitness_list[j][k].append(fitness(j, k, strategy_percent_list)*delta)
             percent_list[j][k].append(strategy_percent_list[j][k])
     # generate new strategy for each objective
     for k in range(0, len(object_type_list)):
@@ -230,7 +228,7 @@ for i in range(0, iter_number):
         #print("new strategy percent ", strategy_percent_list)
         #print("new paremeter list ", parameter_list)
         # append zero list to recorded list
-        fitness_list[k].append(generateZeroList(i+1))
+        #fitness_list[k].append(generateZeroList(i+1))
         percent_list[k].append(generateZeroList(i+1))
 
     # Do replicator
@@ -244,22 +242,22 @@ print("Final parameter list: \n", parameter_list)
 #print("strategy_percent_list", percent_list)
 #print("fitness_list", fitness_list)
 for i in range(0, len(object_type_list)):
-    plt.subplot(2,len(object_type_list),i+1)
+    plt.subplot(1,len(object_type_list),i+1)
     for j in range(0, len(strategy_type_list[i])):
-        lable_percent = "share of strategy " + str(j)
+        lable_percent = "strategy " + str(parameter_list[i][j])
         plt.plot(percent_list[i][j],  label =lable_percent)
         plt.grid()
         plt.ylim(-0.1, 1.1)
         plt.xlim(0, iter_number+20)
         plt.legend(loc='best')
-    plt.subplot(2,len(object_type_list),len(object_type_list)+i+1)
-    for j in range(0, len(strategy_type_list[i])):
-        lable_fitness = "fitness of strategy" + str(j)
-        plt.plot(fitness_list[i][j],  label =lable_fitness)
-        plt.grid()
-        plt.ylim(-0.1, 2.1)
-        plt.xlim(0, iter_number+20)
-        plt.legend(loc='best')
+    # plt.subplot(2,len(object_type_list),len(object_type_list)+i+1)
+    # for j in range(0, len(strategy_type_list[i])):
+    #     lable_fitness = "fitness of strategy" + str(j)
+    #     plt.plot(fitness_list[i][j],  label =lable_fitness)
+    #     plt.grid()
+    #     plt.ylim(-0.1, 2.1)
+    #     plt.xlim(0, iter_number+20)
+    #     plt.legend(loc='best')
 plt.show()
 
 
