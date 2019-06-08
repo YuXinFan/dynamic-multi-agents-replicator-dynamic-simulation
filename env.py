@@ -20,7 +20,7 @@ payoff_table = {}
 opt_func_list = []
 
 # threshold of delete or add new strategy
-threshold = 0.1
+threshold = 0.05
 # append lita, zisi, breaker
 opt_func_list.append(lambda x,i,j: -(x[1]*(2*parameter_list[i][j][0] - 2 * parameter_list[i][j][2]) - 2 * parameter_list[i][j][2]*math.cos(math.pi * x[1]) + x[2]*(-2*math.cos(parameter_list[i][j][1]*math.pi)-2*parameter_list[i][j][1]) + x[0]*(2+2*parameter_list[i][j][1])+2*parameter_list[i][j][0]))
 opt_func_list.append(lambda x,i,j: -(x[1]*(-parameter_list[i][j][1]+parameter_list[i][j][2]) - 3 *  parameter_list[i][j][2]*math.cos(math.pi*x[1]) + x[2]*(-3*parameter_list[i][j][1]+math.cos(math.pi * parameter_list[i][j][1]))+x[0]*(3*parameter_list[i][j][1]-1) + 3 * parameter_list[i][j][0]))
@@ -38,22 +38,28 @@ def cutTail(x):
             t[i] = 0
         elif (t[i] > 1):
             t[i] = 1
-        t[i] = round(t[i] , 4)
+        t[i] = round(t[i] , 2)
     return t
 
 # add new strategy to an objective
 def appendNewStrategy(object_type_, parameter_):
     global strategy_percent_list, strategy_type_list, parameter_list
     if ( list(parameter_) in list((parameter_list[object_type_]))):
-        return 
+        idx = list(parameter_list[object_type_]).index(list(parameter_))
+        if (strategy_percent_list[object_type_][idx] < threshold):
+            strategy_percent_list_of_this_obj = strategy_percent_list[object_type_]
+            max_percent_idx =  strategy_percent_list_of_this_obj.index(max(strategy_percent_list_of_this_obj))
+            strategy_percent_list[object_type_][max_percent_idx] -= threshold
+            strategy_percent_list[object_type_][idx] += threshold
+        return False
     else:
         strategy_type_list[object_type_].append(len(strategy_type_list[object_type_]))
-
         strategy_percent_list_of_this_obj = strategy_percent_list[object_type_]
         max_percent_idx =  strategy_percent_list_of_this_obj.index(max(strategy_percent_list_of_this_obj))
         strategy_percent_list[object_type_][max_percent_idx] -= threshold
         strategy_percent_list[object_type_].append(threshold)
         parameter_list[object_type_].append(list(parameter_))
+        return True
 
 # generate a all 0 list with given length
 def generateZeroList(len):
@@ -170,7 +176,7 @@ def replicate(object_type_, strategy_type_, strategy_percent_list_):
 print("Main Simulate Program")
 initPayoffTable()
 # Define type 0->lita zhuyi, type 1->self-interested, type 2->breaker
-initObjectPopulation(3, 0.1, 0.1, 0.8)
+initObjectPopulation(3, 0.8, 0.1, 0.1)
 
 #define strategy population
 strategy_number_set = [2,2,2]
@@ -179,7 +185,9 @@ strategy_percent_set = [[0.5, 0.5],
                         [0.5, 0.5]]
                         # C , W1, W2
                         
-parameter_set =  [[[0.3, 0.1, 0.1], [0.5, 0.1, 0.1]], [[0.5, 0.1, 0.5], [0.1, 0.1, 0.9]], [[0.0, 0.1, 1.0], [0.1, 0.1, 0.9]]]
+parameter_set =  [[[0.1, 0.0, 0.0], [0.0, 0.0, 0.0]],
+                  [[0.0, 0.0, 0.1], [0.0, 0.0, 0.0]],
+                  [[0.0, 0.1, 0.0], [0.0, 0.0, 0.0]]]
 
 for i in range(0, len(object_type_list)):
     strategy_percent_list.append(initStrategyPopulation(strategy_number_set[i], strategy_percent_set[i]))
@@ -204,7 +212,7 @@ cons = ({'type':'ineq', 'fun':lambda x: x[0]},
         {'type':'ineq', 'fun':lambda x: x[2]},
         {'type':'ineq', 'fun':lambda x: 1-x[2]},
        )
-iter_number=2000
+iter_number=3000
 for i in range(0, iter_number):
     # Append information to list for draw curve
     # look through Objec type 
@@ -217,19 +225,22 @@ for i in range(0, iter_number):
     for k in range(0, len(object_type_list)):
         opt_func_object = opt_func_list[k]
         def opt_func(x):
-            l = np.array([ opt_func_object(x,i,j) for i in range(0, len(parameter_list)) for j in range(0, len(parameter_list[i]))])
+            l = np.array([ (opt_func_object(x,m,n)*strategy_percent_list[m][n]) for m in range(0, len(parameter_list)) for n in range(0, len(parameter_list[m]))])
             return sum(l)
         init_vector = [1,1,1]
         result = opt.minimize(opt_func, init_vector,constraints=cons)
         cuted_x = cutTail(result.x)
         #print("result", cuted_x)
         # TO DO add new strategy to space
-        appendNewStrategy(k, cuted_x)
+        isnew = appendNewStrategy(k, cuted_x)
         #print("new strategy percent ", strategy_percent_list)
         #print("new paremeter list ", parameter_list)
         # append zero list to recorded list
         #fitness_list[k].append(generateZeroList(i+1))
-        percent_list[k].append(generateZeroList(i+1))
+        if (isnew):
+            print(i)
+            print(generateZeroList(i))
+            percent_list[k].append(generateZeroList(i))
 
     # Do replicator
     tmp_strategy_percent_list = strategy_percent_list
